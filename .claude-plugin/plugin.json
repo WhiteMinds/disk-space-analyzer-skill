@@ -1,0 +1,11 @@
+{
+  "name": "disk-space-analyzer",
+  "version": "1.0.0",
+  "description": "Claude Code Skill for analyzing disk space and finding cleanable files. Supports both Windows (via WizTree) and macOS with OS-specific workflows.",
+  "author": {
+    "name": "WhiteMinds"
+  },
+  "repository": "https://github.com/WhiteMinds/disk-space-analyzer-skill",
+  "license": "MIT",
+  "keywords": ["claude-skill", "claude-code", "disk-space", "cleanup", "storage", "analysis", "model-invoked"]
+}
