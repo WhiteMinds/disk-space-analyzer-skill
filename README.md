@@ -10,6 +10,10 @@ Analyze disk space and find cleanable files. Works with Claude Code, other AI as
 - **Flexible Analysis** - Search, filter, explore folders at any depth
 - **Cross-Platform** - Supports Windows (via WizTree) and macOS
 
+## Demo
+
+https://github.com/user-attachments/assets/b559c502-a1ad-4e1b-98bf-1bf0b550d65e
+
 ## Requirements
 
 - Python 3.8+
