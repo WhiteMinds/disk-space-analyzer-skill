@@ -57,6 +57,7 @@ def scan(
 
     rows = []
     seen_paths = set()  # Track seen paths to avoid duplicates (hardlinks/firmlinks)
+    seen_file_ids = set()
     count = 0
     last_progress = time.monotonic()
 
@@ -131,6 +132,11 @@ def scan(
                         st = fp.stat()
                     size = st.st_size
                     allocated = getattr(st, "st_blocks", 0) * 512 or size
+                    file_id = (st.st_dev, st.st_ino)
+                    if st.st_nlink > 1 and file_id in seen_file_ids:
+                        allocated = 0
+                    else:
+                        seen_file_ids.add(file_id)
                     mod_str = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(st.st_mtime))
                 except OSError:
                     size = 0

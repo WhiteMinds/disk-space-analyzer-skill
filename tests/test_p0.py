@@ -52,6 +52,20 @@ class P0Tests(unittest.TestCase):
         self.assertEqual(result["total_cleanable_bytes"], 14336)
         self.assertEqual(result["total_cleanable_logical_bytes"], 3)
 
+    def test_macos_protects_metadata_and_requires_confirmation(self):
+        items = [
+            {"path": "/repo/.git/objects/a", "size": 1, "allocated": 4096, "is_dir": False},
+            {"path": "/repo/.idea/workspace.xml", "size": 1, "allocated": 4096, "is_dir": False},
+            {"path": "/repo/node_modules/x.js", "size": 1, "allocated": 4096, "is_dir": False},
+            {"path": "/Users/u/.ollama/models/blob", "size": 1, "allocated": 8192, "is_dir": False},
+        ]
+        with redirect_stdout(io.StringIO()):
+            result = MAC.cmd_cleanable(items)
+        self.assertEqual(len(result["protected_advisories"]), 2)
+        self.assertEqual(result["categories"]["dev"]["safety"], "check")
+        self.assertEqual(result["categories"]["cache"]["safety"], "check")
+        self.assertEqual(result["total_cleanable_bytes"], 12288)
+
 
 if __name__ == "__main__":
     unittest.main()
