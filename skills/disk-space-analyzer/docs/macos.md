@@ -200,10 +200,10 @@ python3 scripts/macos/analyze_disk.py disk_report.csv filter "path~Downloads,siz
 | Category   | Examples                                      | Safety   | Notes                          |
 |-----------|------------------------------------------------|----------|--------------------------------|
 | temp      | .tmp, .temp, ~files                            | Safe     | Regenerates on demand          |
-| cache     | ~/Library/Caches, .cache, .npm, pip/uv/HF      | Safe     | Often relocatable              |
+| cache     | ~/Library/Caches, .cache, .npm, pip/uv/HF      | Check    | Verify rebuild or migration first |
 | log       | .log, ~/Library/Logs                           | Check    | Check if needed for debugging  |
 | backup    | .bak, .old, .orig                              | Check    | May be important backups       |
-| dev       | node_modules, __pycache__, .venv, .idea, build | Safe     | Recreate with install/build    |
+| dev       | node_modules, __pycache__, .venv, .idea, build | Check    | Verify lockfile and package source first |
 | browser   | Safari, app caches                             | Safe     | Regenerates                    |
 | system    | .DS_Store, CloudKit cache                      | Check    | System/cloud caches            |
 | recycle   | .Trash                                         | Check    | Empty Trash in Finder          |

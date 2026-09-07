@@ -130,15 +130,17 @@ def scan(
                     else:
                         st = fp.stat()
                     size = st.st_size
+                    allocated = getattr(st, "st_blocks", 0) * 512 or size
                     mod_str = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(st.st_mtime))
                 except OSError:
                     size = 0
+                    allocated = 0
                     mod_str = ""
 
                 rows.append({
                     "path": fp_posix,
                     "size": size,
-                    "allocated": size,
+                    "allocated": allocated,
                     "modified": mod_str,
                     "is_dir": 0,
                     "files_count": 0,
@@ -172,7 +174,8 @@ def scan(
         if r["is_dir"] == 1:
             p = r["path"].rstrip("/")
             r["size"] = dir_sizes.get(p, 0)
-            r["allocated"] = r["size"]
+            # Directory allocation is derived from child files.
+            r["allocated"] = sum(x["allocated"] for x in rows if not x["is_dir"] and x["path"].startswith(p + "/"))
 
     # Write CSV
     fieldnames = ["path", "size", "allocated", "modified", "is_dir", "files_count", "folders_count"]
