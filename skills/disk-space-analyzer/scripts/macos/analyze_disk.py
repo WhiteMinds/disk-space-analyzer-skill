@@ -103,10 +103,22 @@ CLEANABLE_PATTERNS_COMPILED = [
 
 
 def parse_size(size_str: str) -> int:
-    try:
-        return int(size_str.strip().replace(",", "").replace(" ", "") or 0)
-    except (ValueError, TypeError):
-        return 0
+    value = str(size_str).strip().replace(",", "").replace(" ", "")
+    if not value:
+        raise ValueError("empty size")
+    units = {"B": 1, "KIB": 1024, "KB": 1024, "MIB": 1024**2, "MB": 1024**2,
+             "GIB": 1024**3, "GB": 1024**3, "TIB": 1024**4, "TB": 1024**4,
+             "PIB": 1024**5, "PB": 1024**5}
+    upper = value.upper()
+    for unit in sorted(units, key=len, reverse=True):
+        if upper.endswith(unit):
+            number = value[:-len(unit)]
+            if not number or float(number) < 0:
+                raise ValueError(f"invalid size: {size_str}")
+            return int(float(number) * units[unit])
+    if re.fullmatch(r"\d+(?:\.\d+)?", value):
+        return int(float(value))
+    raise ValueError(f"invalid size: {size_str}")
 
 
 def format_size(size_bytes: int) -> str:
@@ -166,6 +178,7 @@ def read_csv(csv_path: str) -> List[Dict[str, Any]]:
 
 def cmd_summary(files: List[Dict]) -> Dict:
     total_size = sum(f["size"] for f in files if not f["is_dir"])
+    total_allocated = sum(f["allocated"] for f in files if not f["is_dir"])
     total_files = sum(1 for f in files if not f["is_dir"])
     total_dirs = sum(1 for f in files if f["is_dir"])
     by_ext = defaultdict(lambda: {"count": 0, "size": 0})
@@ -177,6 +190,8 @@ def cmd_summary(files: List[Dict]) -> Dict:
     result = {
         "total_size": format_size(total_size),
         "total_size_bytes": total_size,
+        "allocated_size": format_size(total_allocated),
+        "allocated_size_bytes": total_allocated,
         "total_files": total_files,
         "total_directories": total_dirs,
         "top_extensions": [
@@ -294,22 +309,28 @@ def cmd_folder(files: List[Dict], target_path: str, depth: int = 1) -> Dict:
 
 def cmd_cleanable(files: List[Dict]) -> Dict:
     cleanable = defaultdict(
-        lambda: {"files": [], "total_size": 0, "reason": "", "migration_hints": set(), "safety": "safe"}
+        lambda: {"files": [], "total_size": 0, "total_allocated": 0, "reason": "", "migration_hints": set(), "safety": "safe"}
     )
+    protected_advisories = []
     for f in files:
         if f["is_dir"]:
             continue
         path_lower = f["path"].lower()
+        if "/.git/" in path_lower or path_lower.endswith("/.git") or "/.idea/" in path_lower or path_lower.endswith("/.idea"):
+            protected_advisories.append({"path": f["path"], "reason": "Protected repository or IDE metadata"})
+            continue
         for pattern_re, category, reason, migration_hint in CLEANABLE_PATTERNS_COMPILED:
             if pattern_re.search(path_lower):
                 cleanable[category]["files"].append({
                     "path": f["path"],
                     "size": format_size(f["size"]),
                     "size_bytes": f["size"],
+                    "allocated_bytes": f["allocated"],
                 })
                 cleanable[category]["total_size"] += f["size"]
+                cleanable[category]["total_allocated"] += f["allocated"]
                 cleanable[category]["reason"] = reason
-                cleanable[category]["safety"] = SAFETY_LEVELS.get(category, "check")
+                cleanable[category]["safety"] = "check" if category in {"cache", "dev"} else SAFETY_LEVELS.get(category, "check")
                 if migration_hint:
                     cleanable[category]["migration_hints"].add(migration_hint)
                 break
@@ -317,7 +338,7 @@ def cmd_cleanable(files: List[Dict]) -> Dict:
         # Save actual file count before truncating
         cleanable[category]["actual_file_count"] = len(cleanable[category]["files"])
         cleanable[category]["files"] = sorted(
-            cleanable[category]["files"], key=lambda x: x["size_bytes"], reverse=True
+            cleanable[category]["files"], key=lambda x: x["allocated_bytes"], reverse=True
         )[:50]
     result = {
         "categories": {
@@ -326,6 +347,7 @@ def cmd_cleanable(files: List[Dict]) -> Dict:
                 "safety": data["safety"],
                 "total_size": format_size(data["total_size"]),
                 "total_size_bytes": data["total_size"],
+                "total_allocated_bytes": data["total_allocated"],
                 "file_count": data["actual_file_count"],
                 "migration_hints": list(data["migration_hints"]) if data["migration_hints"] else None,
                 "sample_files": data["files"][:10],
@@ -335,15 +357,18 @@ def cmd_cleanable(files: List[Dict]) -> Dict:
             )
         },
         "by_safety": {"safe": [], "check": [], "admin": []},
-        "total_cleanable_size": format_size(sum(d["total_size"] for d in cleanable.values())),
-        "total_cleanable_bytes": sum(d["total_size"] for d in cleanable.values()),
+        "total_cleanable_size": format_size(sum(d["total_allocated"] for d in cleanable.values())),
+        "total_cleanable_bytes": sum(d["total_allocated"] for d in cleanable.values()),
+        "total_cleanable_logical_size": format_size(sum(d["total_size"] for d in cleanable.values())),
+        "total_cleanable_logical_bytes": sum(d["total_size"] for d in cleanable.values()),
+        "protected_advisories": protected_advisories,
     }
     for cat, data in cleanable.items():
         safety = data["safety"]
         result["by_safety"].setdefault(safety, []).append({
             "category": cat,
-            "size": format_size(data["total_size"]),
-            "size_bytes": data["total_size"],
+            "size": format_size(data["total_allocated"]),
+            "size_bytes": data["total_allocated"],
         })
     for safety in result["by_safety"]:
         result["by_safety"][safety] = sorted(

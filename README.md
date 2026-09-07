@@ -5,7 +5,7 @@ Analyze disk space and find cleanable files. Works with Claude Code, other AI as
 ## Features
 
 - **Smart Detection** - Identifies temp files, caches, logs, dev artifacts (node_modules, __pycache__, .vs, obj)
-- **Safety Levels** - Categorizes files as safe / check first / admin required
+- **Safety Levels** - Categorizes files as safe / check first / admin required; protects Git and IDE metadata
 - **Migration Hints** - Suggests how to relocate large caches (npm, pip, uv, HuggingFace, Docker)
 - **Flexible Analysis** - Search, filter, explore folders at any depth
 - **Cross-Platform** - Supports Windows (via WizTree) and macOS
@@ -247,9 +247,9 @@ python scripts/macos/analyze_disk.py
 | Category | Examples | Safety |
 |----------|----------|--------|
 | temp | .tmp, .temp, ~files | Safe |
-| cache | pip/npm/uv cache, app caches | Safe |
+| cache | pip/npm/uv cache, app caches, AI models | Check first |
 | log | .log, rotated logs | Check first |
-| dev | node_modules, __pycache__, .vs, obj | Safe |
+| dev | node_modules, __pycache__, .vs, obj | Check first |
 | browser | Chrome/Firefox/Edge cache | Safe |
 | windows | Update cache, hiberfil.sys | Admin required |
 

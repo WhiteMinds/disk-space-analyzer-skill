@@ -190,10 +190,10 @@ Full documentation: https://diskanalyzer.com/guide
 | Category | Examples | Safety | Notes |
 |----------|----------|--------|-------|
 | temp | .tmp, .temp, ~files | Safe | Regenerates on demand |
-| cache | App caches, pip/npm cache | Safe | Can often be relocated |
+| cache | App caches, pip/npm cache, AI models | Check first | Verify rebuild or migration first |
 | log | .log, rotated logs | Usually safe | Check if needed for debugging |
 | backup | .bak, .old, .orig | Check first | May contain important backups |
-| dev | node_modules, __pycache__, .vs, obj | Safe | `npm install` / `pip install` recreates |
+| dev | node_modules, __pycache__, .vs, obj | Check first | `npm install` / `pip install` recreates |
 | browser | Chrome/Firefox/Edge cache | Safe | Regenerates automatically |
 | windows | WinSxS backup, Update cache | Admin required | Use Disk Cleanup instead |
 | system | hiberfil.sys, pagefile.sys | Special | See notes below |
